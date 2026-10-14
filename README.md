@@ -25,6 +25,7 @@ src/
 │   │   └── services/
 │   ├── features/
 │   │   ├── dashboard/
+│   │   ├── technical-analysis/
 │   │   ├── instruments/
 │   │   ├── paper-trades/
 │   │   ├── performance/
@@ -98,6 +99,15 @@ Mock mode is intentionally isolated from the real backend calls. When `useMockDa
 - `/strategies`
 - `/performance`
 - `/risk-settings`
+- `/technical-analysis`
+
+## Technical Analysis (MVP-2 frontend)
+
+The `/technical-analysis` page provides instrument/timeframe controls, historical OHLCV candles, indicator cards, strategy-condition explanations, and summary warnings. Mock mode uses deterministic, dated sample history and is clearly identified as non-live.
+
+The Technical Analysis service integrates the documented candle retrieval/import and analysis latest/history/calculate APIs using the standard response envelope and environment API URL. The backend returns stored historical candles; it does not provide live market data. Import can be called through the typed service, but this page does not include a candle-file upload workflow. The chart uses TradingView Lightweight Charts.
+
+Frontend API models/adapters also map the documented flat signal DTOs and aggregate performance DTO, and paper-trade close requests include the required exit price and reason.
 
 ## MVP-1 Scope
 
@@ -113,7 +123,7 @@ Mock mode is intentionally isolated from the real backend calls. When `useMockDa
 
 ## Future Roadmap
 
-- Technical indicators and advanced signal scoring
+- AI-powered signal scoring
 - Real-time market data integration
 - F&O support for options and futures
 - AI-powered news and sentiment analysis
