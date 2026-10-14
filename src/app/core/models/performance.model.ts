@@ -1,5 +1,5 @@
-export interface StrategyPerformance {
-  strategyId: number;
+export interface PerformanceMetrics {
+  strategyId?: number;
   strategyName?: string;
   totalTrades: number;
   winningTrades: number;

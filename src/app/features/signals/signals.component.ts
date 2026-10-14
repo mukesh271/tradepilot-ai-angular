@@ -30,9 +30,9 @@ import { SignalScoreComponent } from '../../shared/components/signal-score/signa
               Status
               <select [formControl]="statusControl">
                 <option [value]="''">All</option>
-                <option [value]="1">Detected</option>
-                <option [value]="2">Alerted</option>
-                <option [value]="3">Confirmed</option>
+                <option value="Detected">Detected</option>
+                <option value="Active">Active</option>
+                <option value="Expired">Expired</option>
               </select>
             </label>
           </div>
@@ -57,15 +57,15 @@ import { SignalScoreComponent } from '../../shared/components/signal-score/signa
             </thead>
             <tbody>
               <tr *ngFor="let signal of signals">
-                <td><a [routerLink]="['/signals', signal.id]">{{ signal.instrument?.symbol || 'N/A' }}</a></td>
+                <td><a [routerLink]="['/signals', signal.id]">{{ signal.instrument?.symbol || signal.instrumentSymbol || 'N/A' }}</a></td>
                 <td>{{ getDirection(signal.direction) }}</td>
-                <td>{{ signal.strategy?.name || 'Breakout' }}</td>
+                <td>{{ signal.strategy?.name || signal.strategyName || 'N/A' }}</td>
                 <td><app-signal-score [score]="signal.signalScore" /></td>
                 <td>{{ signal.entryPrice | currency:'INR':'symbol-narrow':'1.0-0' }}</td>
                 <td>{{ signal.stopLoss | currency:'INR':'symbol-narrow':'1.0-0' }}</td>
                 <td>{{ signal.target | currency:'INR':'symbol-narrow':'1.0-0' }}</td>
                 <td>1:{{ signal.riskRewardRatio }}</td>
-                <td>{{ getStatus(signal.status) }}</td>
+                <td>{{ signal.statusLabel || getStatus(signal.status) }}</td>
               </tr>
             </tbody>
           </table>
@@ -108,7 +108,7 @@ export class SignalsComponent implements OnInit {
   loadSignals(): void {
     this.isLoading = true;
     const minimumScore = this.minimumScoreControl.value ?? 0;
-    const statusValue = this.statusControl.value ? Number(this.statusControl.value) : undefined;
+    const statusValue = this.statusControl.value || undefined;
 
     this.signalService.getSignals(minimumScore || undefined, statusValue).subscribe({
       next: (response) => {
@@ -127,7 +127,8 @@ export class SignalsComponent implements OnInit {
     return 'Neutral';
   }
 
-  getStatus(status: number): string {
+  getStatus(status: number | string): string {
+    if (typeof status === 'string') return status;
     switch (status) {
       case SignalStatus.Detected: return 'Detected';
       case SignalStatus.Alerted: return 'Alerted';

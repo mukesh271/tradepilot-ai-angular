@@ -25,7 +25,12 @@ export const errorInterceptor: HttpInterceptorFn = (req, next) => {
 
   return next(req).pipe(
     catchError((error: HttpErrorResponse) => {
-      const message = error?.error?.message ?? getMessage(error.status);
+      const apiMessage = error?.error?.message;
+      const apiErrors = error?.error?.errors;
+      const detail = Array.isArray(apiErrors) ? apiErrors.filter((item): item is string => typeof item === 'string').join(' ') : '';
+      const message = error.status === 0
+        ? 'Cannot reach the API. Check the backend URL, that the server is running, and that CORS allows this frontend origin.'
+        : [apiMessage ?? getMessage(error.status), detail].filter(Boolean).join(' ');
       notifications.error(message);
       return throwError(() => new Error(message));
     })

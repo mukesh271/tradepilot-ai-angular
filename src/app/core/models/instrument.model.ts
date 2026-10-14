@@ -8,7 +8,7 @@ export interface Instrument {
   id: number;
   symbol: string;
   exchange: string;
-  type: InstrumentType;
+  type: InstrumentType | string;
   isActive: boolean;
   createdAtUtc: string;
   updatedAtUtc: string;

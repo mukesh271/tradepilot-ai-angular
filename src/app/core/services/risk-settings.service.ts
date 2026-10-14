@@ -1,10 +1,10 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable } from '@angular/core';
-import { Observable, of } from 'rxjs';
+import { Observable, map, of } from 'rxjs';
 import { environment } from '../../../environments/environment';
 import { API_ENDPOINTS } from '../config/api-endpoints';
 import { ApiResponse } from '../models/api-response.model';
-import { RiskSettings } from '../models/risk-settings.model';
+import { RiskSettings, UpdateRiskSettingsRequest } from '../models/risk-settings.model';
 
 const mockRiskSettings: RiskSettings = {
   id: 1,
@@ -26,14 +26,27 @@ export class RiskSettingsService {
       return of({ success: true, data: mockRiskSettings, message: 'Mock risk settings loaded.' });
     }
 
-    return this.http.get<ApiResponse<RiskSettings>>(`${environment.apiBaseUrl}${API_ENDPOINTS.riskSettings}`);
+    return this.http.get<ApiResponse<RiskSettings>>(`${environment.apiBaseUrl}${API_ENDPOINTS.riskSettings}`)
+      .pipe(map((response) => this.validateResponse(response)));
   }
 
-  updateRiskSettings(settings: RiskSettings): Observable<ApiResponse<RiskSettings>> {
+  updateRiskSettings(settings: UpdateRiskSettingsRequest): Observable<ApiResponse<RiskSettings>> {
     if (environment.useMockData) {
-      return of({ success: true, data: settings, message: 'Risk settings updated successfully.' });
+      return of({
+        success: true,
+        data: { ...mockRiskSettings, ...settings, updatedAtUtc: new Date().toISOString() },
+        message: 'Risk settings updated successfully.'
+      });
     }
 
-    return this.http.put<ApiResponse<RiskSettings>>(`${environment.apiBaseUrl}${API_ENDPOINTS.riskSettings}`, settings);
+    return this.http.put<ApiResponse<RiskSettings>>(`${environment.apiBaseUrl}${API_ENDPOINTS.riskSettings}`, settings)
+      .pipe(map((response) => this.validateResponse(response)));
+  }
+
+  private validateResponse<T>(response: ApiResponse<T>): ApiResponse<T> {
+    if (!response.success || response.data === null) {
+      throw new Error(response.message || response.errors?.join(' ') || 'The risk settings API returned no settings.');
+    }
+    return response;
   }
 }

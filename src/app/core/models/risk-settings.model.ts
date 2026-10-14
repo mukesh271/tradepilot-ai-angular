@@ -8,3 +8,8 @@ export interface RiskSettings {
   createdAtUtc: string;
   updatedAtUtc: string;
 }
+
+export type UpdateRiskSettingsRequest = Pick<
+  RiskSettings,
+  'tradingCapital' | 'riskPerTradePercent' | 'maximumDailyLossPercent' | 'minimumSignalScore' | 'paperTradingEnabled'
+>;

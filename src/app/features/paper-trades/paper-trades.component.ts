@@ -1,6 +1,6 @@
 import { CommonModule, CurrencyPipe, DatePipe } from '@angular/common';
 import { Component, OnInit } from '@angular/core';
-import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
+import { FormBuilder, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute } from '@angular/router';
 import { PaperTrade, TradeStatus } from '../../core/models/paper-trade.model';
 import { Signal } from '../../core/models/signal.model';
@@ -13,7 +13,7 @@ import { LoadingStateComponent } from '../../shared/components/loading-state/loa
 @Component({
   selector: 'app-paper-trades',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, EmptyStateComponent, LoadingStateComponent, CurrencyPipe, DatePipe],
+  imports: [CommonModule, FormsModule, ReactiveFormsModule, EmptyStateComponent, LoadingStateComponent, CurrencyPipe, DatePipe],
   template: `
     <section class="paper-page">
       <div class="summary-grid">
@@ -41,14 +41,23 @@ import { LoadingStateComponent } from '../../shared/components/loading-state/loa
           <tbody>
             <tr *ngFor="let trade of trades">
               <td>{{ getSignalSymbol(trade.signalId) }}</td>
-              <td>{{ getDirectionForTrade(trade.signalId) }}</td>
+              <td>{{ trade.signalDirection || getDirectionForTrade(trade.signalId) }}</td>
               <td>{{ trade.entryPrice | currency:'INR':'symbol-narrow':'1.0-0' }}</td>
               <td>{{ trade.exitPrice ?? '-' }}</td>
               <td>{{ trade.quantity }}</td>
               <td>{{ trade.profitLoss ?? '-' }}</td>
               <td>{{ getStatusText(trade.status) }}</td>
               <td>{{ trade.createdAtUtc | date:'mediumDate' }}</td>
-              <td><button *ngIf="trade.status === 1" (click)="closeTrade(trade.id)">Close</button></td>
+              <td>
+                <div *ngIf="trade.status === TradeStatus.Open" class="close-controls">
+                  <input type="number" min="0.01" step="0.01" placeholder="Exit price" aria-label="Exit price"
+                    [(ngModel)]="closeExitPrices[trade.id]">
+                  <input type="text" placeholder="Exit reason" aria-label="Exit reason"
+                    [(ngModel)]="closeExitReasons[trade.id]">
+                  <button type="button" (click)="closeTrade(trade.id, closeExitPrices[trade.id], closeExitReasons[trade.id])"
+                    [disabled]="!closeExitPrices[trade.id] || !closeExitReasons[trade.id]?.trim()">Close Trade</button>
+                </div>
+              </td>
             </tr>
           </tbody>
         </table>
@@ -111,14 +120,18 @@ import { LoadingStateComponent } from '../../shared/components/loading-state/loa
     '.actions { display:flex; justify-content:flex-end; margin-top:1rem; }',
     'button { background:#5eead4; color:#04111a; border:none; border-radius:10px; padding:0.8rem 1rem; font-weight:700; cursor:pointer; }',
     'button:disabled { opacity:0.5; cursor:not-allowed; }',
+    '.close-controls { display:grid; min-width:150px; gap:.35rem; }',
     '@media (max-width: 768px) { .summary-grid { grid-template-columns:1fr; } }'
   ]
 })
 export class PaperTradesComponent implements OnInit {
+  readonly TradeStatus = TradeStatus;
   trades: PaperTrade[] = [];
   signals: Signal[] = [];
   selectedSignal?: Signal;
   isLoading = true;
+  closeExitPrices: Record<number, number | null> = {};
+  closeExitReasons: Record<number, string> = {};
 
   form = this.fb.group({
     entryPrice: this.fb.control<number | null>(null, [Validators.required, Validators.min(0.01)]),
@@ -220,8 +233,12 @@ export class PaperTradesComponent implements OnInit {
     });
   }
 
-  closeTrade(id: number): void {
-    this.paperTradeService.closePaperTrade(id).subscribe({
+  closeTrade(id: number, exitPrice: number | null | undefined, exitReason: string | undefined): void {
+    if (!exitPrice || !exitReason?.trim()) {
+      this.notificationService.error('Enter a valid exit price and reason before closing this trade.');
+      return;
+    }
+    this.paperTradeService.closePaperTrade(id, { exitPrice, exitReason: exitReason.trim() }).subscribe({
       next: () => {
         this.notificationService.info('Paper trade closed.');
         this.loadTrades();

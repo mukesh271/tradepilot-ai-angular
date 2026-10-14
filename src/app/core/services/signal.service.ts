@@ -1,11 +1,11 @@
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Injectable } from '@angular/core';
-import { Observable, of } from 'rxjs';
+import { Observable, map, of } from 'rxjs';
 import { environment } from '../../../environments/environment';
 import { API_ENDPOINTS } from '../config/api-endpoints';
 import { ApiResponse } from '../models/api-response.model';
 import { InstrumentType } from '../models/instrument.model';
-import { Signal, SignalCondition, SignalDirection, SignalStatus } from '../models/signal.model';
+import { CreateSignalRequest, Signal, SignalCondition, SignalDirection, SignalDto, SignalStatus } from '../models/signal.model';
 import { Strategy } from '../models/strategy.model';
 
 const mockSignalConditions: SignalCondition[] = [
@@ -74,18 +74,29 @@ const mockSignals: Signal[] = [
   }
 ];
 
+const signalStatusValues: Record<string, SignalStatus> = {
+  Detected: SignalStatus.Detected,
+  Active: SignalStatus.Alerted,
+  Alerted: SignalStatus.Alerted,
+  Confirmed: SignalStatus.Confirmed,
+  Expired: SignalStatus.Expired,
+  Invalidated: SignalStatus.Invalidated
+};
+
 @Injectable({ providedIn: 'root' })
 export class SignalService {
   constructor(private readonly http: HttpClient) {}
 
-  getSignals(minimumScore?: number, status?: SignalStatus): Observable<ApiResponse<Signal[]>> {
+  getSignals(minimumScore?: number, status?: SignalStatus | string, instrument?: string): Observable<ApiResponse<Signal[]>> {
     if (environment.useMockData) {
       let signals = [...mockSignals];
       if (minimumScore !== undefined) {
         signals = signals.filter((signal) => signal.signalScore >= minimumScore);
       }
       if (status !== undefined) {
-        signals = signals.filter((signal) => signal.status === status);
+        const statusName = typeof status === 'number' ? SignalStatus[status] : status;
+        const expectedStatus = signalStatusValues[statusName] ?? status;
+        signals = signals.filter((signal) => signal.status === expectedStatus);
       }
       return of({ success: true, data: signals, message: 'Mock signals loaded.' });
     }
@@ -95,9 +106,13 @@ export class SignalService {
       params = params.set('minimumScore', String(minimumScore));
     }
     if (status !== undefined) {
-      params = params.set('status', String(status));
+      params = params.set('status', typeof status === 'number' ? SignalStatus[status] : status);
     }
-    return this.http.get<ApiResponse<Signal[]>>(`${environment.apiBaseUrl}${API_ENDPOINTS.signals}`, { params });
+    if (instrument?.trim()) {
+      params = params.set('instrument', instrument.trim());
+    }
+    return this.http.get<ApiResponse<SignalDto[]>>(`${environment.apiBaseUrl}${API_ENDPOINTS.signals}`, { params })
+      .pipe(map((response) => this.mapResponse(response, (items) => items.map((item) => this.mapSignal(item)))));
   }
 
   getSignal(id: number): Observable<ApiResponse<Signal>> {
@@ -106,14 +121,71 @@ export class SignalService {
       return of({ success: true, data: signal, message: 'Mock signal loaded.' });
     }
 
-    return this.http.get<ApiResponse<Signal>>(`${environment.apiBaseUrl}${API_ENDPOINTS.signals}/${id}`);
+    return this.http.get<ApiResponse<SignalDto>>(`${environment.apiBaseUrl}${API_ENDPOINTS.signals}/${id}`)
+      .pipe(map((response) => this.mapResponse(response, (item) => this.mapSignal(item))));
   }
 
-  createSignal(payload: Partial<Signal>): Observable<ApiResponse<Signal>> {
+  createSignal(request: CreateSignalRequest): Observable<ApiResponse<Signal>> {
     if (environment.useMockData) {
-      return of({ success: true, data: { ...mockSignals[0], ...payload }, message: 'Signal created successfully.' });
+      const direction = request.direction === 'Bullish' ? SignalDirection.Bullish
+        : request.direction === 'Bearish' ? SignalDirection.Bearish
+          : SignalDirection.Neutral;
+      const created: Signal = {
+        ...mockSignals[0],
+        ...request,
+        id: Date.now(),
+        direction,
+        expiresAtUtc: request.expiresAtUtc ?? undefined,
+        conditions: request.conditions.map((condition, index) => ({
+          ...condition,
+          id: index + 1,
+          signalId: Date.now(),
+          createdAtUtc: new Date().toISOString()
+        }))
+      };
+      return of({ success: true, data: created, message: 'Signal created successfully.' });
     }
 
-    return this.http.post<ApiResponse<Signal>>(`${environment.apiBaseUrl}${API_ENDPOINTS.signals}`, payload);
+    return this.http.post<ApiResponse<SignalDto>>(`${environment.apiBaseUrl}${API_ENDPOINTS.signals}`, request)
+      .pipe(map((response) => this.mapResponse(response, (item) => this.mapSignal(item))));
+  }
+
+  private mapSignal(dto: SignalDto): Signal {
+    const conditions: SignalCondition[] = (dto.conditions ?? []).map((condition) => ({
+      ...condition,
+      signalId: dto.id
+    }));
+    return {
+      id: dto.id,
+      instrumentId: dto.instrumentId,
+      instrumentSymbol: dto.instrumentSymbol,
+      strategyId: dto.strategyId,
+      strategyName: dto.strategyName,
+      direction: dto.direction === 'Bullish' ? SignalDirection.Bullish
+        : dto.direction === 'Bearish' ? SignalDirection.Bearish
+          : SignalDirection.Neutral,
+      signalScore: dto.signalScore,
+      entryPrice: dto.entryPrice,
+      stopLoss: dto.stopLoss,
+      target: dto.target,
+      riskRewardRatio: dto.riskRewardRatio,
+      timeFrame: dto.timeFrame,
+      explanation: dto.explanation,
+      status: dto.status,
+      statusLabel: dto.status,
+      createdAtUtc: dto.createdAtUtc,
+      expiresAtUtc: dto.expiresAtUtc ?? undefined,
+      conditions
+    };
+  }
+
+  private mapResponse<T, R>(
+    response: ApiResponse<T>,
+    mapper: (data: T) => R
+  ): ApiResponse<R> {
+    if (!response.success || response.data === null) {
+      throw new Error(response.message || response.errors?.join(' ') || 'The signals API request was unsuccessful.');
+    }
+    return { ...response, data: mapper(response.data) };
   }
 }

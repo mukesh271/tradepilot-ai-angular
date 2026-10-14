@@ -16,7 +16,7 @@ import { SignalScoreComponent } from '../../shared/components/signal-score/signa
       <div class="hero">
         <div>
           <p class="eyebrow">Signal</p>
-          <h1>{{ signal.instrument?.symbol || 'Instrument' }} <span class="direction">{{ getDirection(signal.direction) }}</span></h1>
+          <h1>{{ signal.instrument?.symbol || signal.instrumentSymbol || 'Instrument' }} <span class="direction">{{ getDirection(signal.direction) }}</span></h1>
         </div>
         <div class="score-box">
           <span>Score</span>
@@ -107,7 +107,8 @@ export class SignalDetailComponent implements OnInit {
     });
   }
 
-  getDirection(direction: number): string {
+  getDirection(direction: number | string): string {
+    if (typeof direction === 'string') return direction;
     return direction === SignalDirection.Bullish ? 'Bullish' : direction === SignalDirection.Bearish ? 'Bearish' : 'Neutral';
   }
 

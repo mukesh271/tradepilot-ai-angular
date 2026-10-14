@@ -29,8 +29,11 @@ export interface Signal {
   id: number;
   instrumentId: number;
   instrument?: Instrument;
+  instrumentSymbol?: string;
   strategyId: number;
   strategy?: Strategy;
+  strategyName?: string;
+  statusLabel?: string;
   direction: SignalDirection;
   signalScore: number;
   entryPrice: number;
@@ -39,8 +42,54 @@ export interface Signal {
   riskRewardRatio: number;
   timeFrame: string;
   explanation: string;
-  status: SignalStatus;
+  status: SignalStatus | string;
   createdAtUtc: string;
   expiresAtUtc?: string;
   conditions?: SignalCondition[];
+}
+
+export interface SignalDto {
+  id: number;
+  instrumentId: number;
+  instrumentSymbol: string;
+  strategyId: number;
+  strategyName: string;
+  direction: 'Bullish' | 'Bearish' | 'Neutral' | string;
+  signalScore: number;
+  entryPrice: number;
+  stopLoss: number;
+  target: number;
+  riskRewardRatio: number;
+  timeFrame: string;
+  explanation: string;
+  status: 'Detected' | 'Active' | 'Expired' | string;
+  createdAtUtc: string;
+  expiresAtUtc: string | null;
+  conditions: Array<{
+    id: number;
+    name: string;
+    score: number;
+    passed: boolean;
+    explanation: string;
+    createdAtUtc: string;
+  }>;
+}
+
+export interface CreateSignalRequest {
+  instrumentId: number;
+  strategyId: number;
+  direction: 'Bullish' | 'Bearish' | 'Neutral';
+  signalScore: number;
+  entryPrice: number;
+  stopLoss: number;
+  target: number;
+  timeFrame: string;
+  explanation: string;
+  expiresAtUtc: string | null;
+  conditions: Array<{
+    name: string;
+    score: number;
+    passed: boolean;
+    explanation: string;
+  }>;
 }

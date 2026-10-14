@@ -25,7 +25,7 @@ export class InstrumentService {
 
     let params = new HttpParams();
     if (type !== undefined) {
-      params = params.set('type', String(type));
+      params = params.set('type', typeof type === 'number' ? InstrumentType[type] : String(type));
     }
 
     return this.http.get<ApiResponse<Instrument[]>>(`${environment.apiBaseUrl}${API_ENDPOINTS.instruments}`, { params });

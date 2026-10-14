@@ -13,7 +13,8 @@ export const routes: Routes = [
       { path: 'instruments', loadComponent: () => import('./features/instruments/instruments.component').then((m) => m.InstrumentsComponent) },
       { path: 'strategies', loadComponent: () => import('./features/strategies/strategies.component').then((m) => m.StrategiesComponent) },
       { path: 'performance', loadComponent: () => import('./features/performance/performance.component').then((m) => m.PerformanceComponent) },
-      { path: 'risk-settings', loadComponent: () => import('./features/risk-settings/risk-settings.component').then((m) => m.RiskSettingsComponent) }
+      { path: 'risk-settings', loadComponent: () => import('./features/risk-settings/risk-settings.component').then((m) => m.RiskSettingsComponent) },
+      { path: 'technical-analysis', loadComponent: () => import('./features/technical-analysis/technical-analysis.component').then((m) => m.TechnicalAnalysisComponent) }
     ]
   }
 ];

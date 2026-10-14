@@ -76,15 +76,15 @@ import { RouterLink } from '@angular/router';
               </thead>
               <tbody>
                 <tr *ngFor="let signal of signals">
-                  <td><a [routerLink]="['/signals', signal.id]">{{ signal.instrument?.symbol || 'NIFTY' }}</a></td>
+                  <td><a [routerLink]="['/signals', signal.id]">{{ signal.instrument?.symbol || signal.instrumentSymbol || 'N/A' }}</a></td>
                   <td>{{ getDirectionText(signal.direction) }}</td>
-                  <td>{{ signal.strategy?.name || 'Breakout' }}</td>
+                  <td>{{ signal.strategy?.name || signal.strategyName || 'N/A' }}</td>
                   <td><app-signal-score [score]="signal.signalScore" /></td>
                   <td>{{ signal.entryPrice | currency:'INR':'symbol-narrow':'1.0-0' }}</td>
                   <td>{{ signal.stopLoss | currency:'INR':'symbol-narrow':'1.0-0' }}</td>
                   <td>{{ signal.target | currency:'INR':'symbol-narrow':'1.0-0' }}</td>
                   <td>1:{{ signal.riskRewardRatio }}</td>
-                  <td>{{ getStatusText(signal.status) }}</td>
+                  <td>{{ signal.statusLabel || getStatusText(signal.status) }}</td>
                   <td>{{ signal.createdAtUtc | date:'shortTime' }}</td>
                 </tr>
               </tbody>
@@ -175,7 +175,8 @@ export class DashboardComponent implements OnInit {
     return direction === 1 ? 'BULLISH' : direction === 2 ? 'BEARISH' : 'NEUTRAL';
   }
 
-  getStatusText(status: number): string {
+  getStatusText(status: number | string): string {
+    if (typeof status === 'string') return status;
     switch (status) {
       case 1: return 'Detected';
       case 2: return 'Alerted';

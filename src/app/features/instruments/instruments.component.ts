@@ -19,9 +19,10 @@ import { LoadingStateComponent } from '../../shared/components/loading-state/loa
               Filter
               <select [formControl]="typeControl">
                 <option [value]="'all'">All</option>
-                <option [value]="'1'">Equity</option>
-                <option [value]="'2'">Future</option>
-                <option [value]="'3'">Option</option>
+                <option value="Equity">Equity</option>
+                <option value="Index">Index</option>
+                <option value="Future">Future</option>
+                <option value="Option">Option</option>
               </select>
             </label>
             <label>
@@ -108,7 +109,10 @@ export class InstrumentsComponent implements OnInit {
     const search = (this.searchControl.value ?? '').trim().toLowerCase();
 
     this.instruments = this.allInstruments.filter((instrument) => {
-      const matchesType = typeValue === 'all' || String(instrument.type) === typeValue;
+      const typeName = typeof instrument.type === 'number'
+        ? InstrumentType[instrument.type]
+        : instrument.type;
+      const matchesType = typeValue === 'all' || typeName === typeValue;
       const matchesSearch = !search || instrument.symbol.toLowerCase().includes(search);
       return matchesType && matchesSearch;
     });
@@ -118,7 +122,8 @@ export class InstrumentsComponent implements OnInit {
     return this.instruments;
   }
 
-  getTypeLabel(type: InstrumentType): string {
+  getTypeLabel(type: InstrumentType | string): string {
+    if (typeof type === 'string') return type;
     switch (type) {
       case InstrumentType.Equity: return 'Equity';
       case InstrumentType.Future: return 'Future';

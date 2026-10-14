@@ -1,8 +1,11 @@
 export const API_ENDPOINTS = {
   instruments: '/instruments',
   strategies: '/strategies',
-  riskSettings: '/risk-settings',
+  riskSettings: '/RiskSettings',
   signals: '/signals',
-  paperTrades: '/paper-trades',
-  performance: '/performance'
+  paperTrades: '/paperTrades',
+  performance: '/performance',
+  candles: '/candles',
+  candleImport: '/candles/import',
+  analysis: '/analysis'
 };

@@ -14,6 +14,7 @@ import { RouterLink, RouterLinkActive } from '@angular/router';
         <a routerLink="/paper-trades" routerLinkActive="active">Paper Trades</a>
         <a routerLink="/instruments" routerLinkActive="active">Instruments</a>
         <a routerLink="/strategies" routerLinkActive="active">Strategies</a>
+        <a routerLink="/technical-analysis" routerLinkActive="active">Technical Analysis</a>
         <a routerLink="/performance" routerLinkActive="active">Performance</a>
         <a routerLink="/risk-settings" routerLinkActive="active">Risk Settings</a>
       </nav>
